@@ -4,12 +4,16 @@ package com.example.weather_app
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.Observer
 import com.example.weather_app.Data.Database.SavedCityEntity
+import com.example.weather_app.Data.ForecastIntent
+import com.example.weather_app.Data.ForecastState
 import com.example.weather_app.Data.Model.*
 import com.example.weather_app.Data.WeatherRepository
 import com.example.weather_app.Features.WeatherViewModel
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.*
 import org.junit.*
 
@@ -69,35 +73,29 @@ class WeatherViewModelTest {
     }
 
     @Test
-    fun `getForeCast updates LiveData on success`() = runTest {
+    fun `getForeCast updates state on success`() = runTest {
         val fakeForecast = ForecastWeatherResponse(
-            "",
-            message = 1,
-            cnt = 7,
-            list = listOf(),
-            city = City(
-                id = 1,
-                name = "",
-                coord = Coord(0.0,0.0),
-                country = "",
-                population = 1,
-                timezone = 1,
-                sunrise = 1L,
-                sunset = 1
-            )
+            "", message = 1, cnt = 7, list = listOf(),
+            city = City(1,"", Coord(0.0,0.0), "",1,1,1L,1)
         )
         coEvery { repository.getSavedCities() } returns emptyList()
         coEvery { repository.getForecastWeather(any()) } returns fakeForecast
 
-        val observer = mockk<Observer<ForecastWeatherResponse>>(relaxed = true)
-        viewModel.forecast.observeForever(observer)
+        // Collect the state flow
+        val states = mutableListOf<ForecastState>()
+        val job = launch { viewModel.state.toList(states) } // collect all emitted states
 
-        viewModel.getForeCast()
+        viewModel.processIntent(ForecastIntent.LoadForecast)
         advanceUntilIdle()
 
         coVerify { repository.getForecastWeather(any()) }
-        Assert.assertEquals(fakeForecast, viewModel.forecast.value)
-        viewModel.forecast.removeObserver(observer)
+
+        // Assert the last emitted state contains our fakeForecast
+        Assert.assertEquals(fakeForecast, states.last().forecast)
+        Assert.assertFalse(states.last().isLoading)
+        Assert.assertNull(states.last().error)
+
+        job.cancel()
     }
 
     @Test

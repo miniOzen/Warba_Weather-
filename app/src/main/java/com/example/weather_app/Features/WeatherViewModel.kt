@@ -9,8 +9,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import com.example.weather_app.Data.Database.SavedCityEntity
+import com.example.weather_app.Data.ForecastIntent
+import com.example.weather_app.Data.ForecastState
 import com.example.weather_app.Data.Model.ForecastWeatherResponse
 import com.example.weather_app.Data.Model.SearchedCityResponse
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 
@@ -25,8 +30,16 @@ class WeatherViewModel @Inject constructor(
     private val _searchResult = MutableLiveData<List<SearchedCityResponse>>()
     val searchResult: LiveData<List<SearchedCityResponse>> get() = _searchResult
 
-    private val _forecast = MutableLiveData<ForecastWeatherResponse>()
-    val forecast: LiveData<ForecastWeatherResponse> get() = _forecast
+    private val _state = MutableStateFlow(ForecastState())
+    val state: StateFlow<ForecastState> get() = _state
+
+    fun processIntent(intent: ForecastIntent) {
+        when (intent) {
+            is ForecastIntent.LoadForecast -> getForeCast()
+        }
+    }
+
+
 
     private val _error = MutableLiveData<String>()
     val error: LiveData<String> get() = _error
@@ -36,7 +49,7 @@ class WeatherViewModel @Inject constructor(
 
     fun fetchCurrentWeather() {
         viewModelScope.launch {
-            _loading.value = false
+            _loading.value = true
             try {
                 val cities = repository.getSavedCities()
                 val savedCity = cities.getOrNull(0)
@@ -63,28 +76,23 @@ class WeatherViewModel @Inject constructor(
 
     fun getForeCast() {
         viewModelScope.launch {
-            _loading.value = false
+            _state.update { it.copy(isLoading = true, error = null) }
             try {
                 val cities = repository.getSavedCities()
-                val savedCity = cities.getOrNull(0)
-                val map = mutableMapOf(
-                    "cnt" to "7", "appid" to "e25592eec79bd71833abe64ac5141d63"
-                )
-
+                val savedCity = cities.firstOrNull()
+                val map = mutableMapOf("cnt" to "7", "appid" to "e25592eec79bd71833abe64ac5141d63")
                 if (savedCity != null) {
-                    map.put("lat", savedCity.lat.toString())
-                    map.put("lon", savedCity.lon.toString())
-
+                    map["lat"] = savedCity.lat.toString()
+                    map["lon"] = savedCity.lon.toString()
                 } else {
-                    map.put("q", "kuwait")
+                    map["q"] = "kuwait"
                 }
+
                 val response = repository.getForecastWeather(map)
-                _forecast.value = response
+                _state.update { it.copy(forecast = response, isLoading = false) }
 
             } catch (e: Exception) {
-                _error.value = e.message
-            } finally {
-                _loading.value = false
+                _state.update { it.copy(error = e.message, isLoading = false) }
             }
         }
     }

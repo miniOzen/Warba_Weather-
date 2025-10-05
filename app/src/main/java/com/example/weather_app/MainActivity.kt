@@ -3,14 +3,21 @@ package com.example.weather_app
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.View
+import android.widget.Toast
 import com.example.weather_app.Features.WeatherViewModel
 import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.weather_app.Data.ForecastIntent
 import com.example.weather_app.Data.Model.ForecastItem
 import com.example.weather_app.Features.SearchCityActivity
 import com.example.weather_app.Features.adapters.ForecastAdapter
 import com.example.weather_app.databinding.ActivityMainBinding
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @AndroidEntryPoint
@@ -36,8 +43,17 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        model.weather.observe(this) {
+        model.loading.observe(this){
+            if (it== true){
+                binding.progDetails.visibility = View.VISIBLE
+                binding.layoutWeatherDetails.visibility = View.GONE
+            }else{
+                binding.progDetails.visibility = View.GONE
+                binding.layoutWeatherDetails.visibility = View.VISIBLE
+            }
+        }
 
+        model.weather.observe(this) {
 
             binding.lottieAnm.setAnimation(getWeatherIcon(it.weather[0].main, it.weather[0].icon))
             binding.tvCityName.text = it.name
@@ -55,14 +71,27 @@ class MainActivity : AppCompatActivity() {
         }
 
         model.getForeCast()
-        model.forecast.observe(this) {
-            if (it.list.isNotEmpty()) {
-                forecastWeather.clear()
-                forecastWeather.addAll(it.list)
-                adapter.notifyDataSetChanged()
-            }
 
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                model.state.collect { state ->
+
+
+                    state.error?.let {
+                        Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show()
+                    }
+
+                    if (state.forecast != null && state.forecast.list.isNotEmpty()) {
+                        forecastWeather.clear()
+                        forecastWeather.addAll(state.forecast.list)
+                        adapter.notifyDataSetChanged()
+                    }
+                }
+            }
         }
+
+        model.processIntent(ForecastIntent.LoadForecast)
+
     }
 
 
@@ -78,7 +107,6 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
-
 
 
     override fun onResume() {
