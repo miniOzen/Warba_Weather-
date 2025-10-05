@@ -10,7 +10,7 @@ import retrofit2.http.QueryMap
 interface ApiInterface {
 
     @GET("/geo/1.0/direct")
-    suspend fun getCities(@QueryMap map: Map<String, String>): SearchedCityResponse
+    suspend fun getCities(@QueryMap map: Map<String, String>): List<SearchedCityResponse>
 
     @GET("/data/2.5/weather")
     suspend fun getCurrentWeather(@QueryMap map: Map<String, String>) : CurrentWeatherResponse

@@ -28,20 +28,17 @@ class ForecastAdapter(
     override fun onBindViewHolder(holder: ForecastViewHolder, position: Int) {
         val item = items[position]
 
-        // Example: Set day (today / tomorrow etc.)
-        val timezoneOffsetSeconds = 10800  // from JSON
+        val timezoneOffsetSeconds = 10800
         val localDate = Date((item.dt + timezoneOffsetSeconds) * 1000L)
         val dayOfWeek = SimpleDateFormat("EEE", Locale.getDefault()).format(localDate)
         holder.binding.tvDay.text = if (position == 0) "Today" else dayOfWeek
 
-        // Convert Kelvin → Celsius
         val minTemp = (item.main.temp_min - 273.15).toInt()
         val maxTemp = (item.main.temp_max - 273.15).toInt()
 
         holder.binding.tvMin.text = "${minTemp}°"
         holder.binding.tvMax.text = "${maxTemp}°"
 
-        // Weather condition → Lottie animation
         when (item.weather[0].main.lowercase(Locale.getDefault())) {
             "clear" -> holder.binding.lottieAnim.setAnimation(R.raw.sunny)
             "clouds" -> holder.binding.lottieAnim.setAnimation(R.raw.clouds)

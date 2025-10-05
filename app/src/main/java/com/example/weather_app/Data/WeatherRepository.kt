@@ -21,19 +21,17 @@ class WeatherRepository @Inject constructor(
         return savedCityDao.getSaveCites()
     }
 
-    suspend fun insertCity(city: SavedCityEntity) {
+    suspend fun saveCity(city: SavedCityEntity) {
         savedCityDao.insertCity(city)
     }
 
-    suspend fun deleteCity(city: SavedCityEntity) {
-        savedCityDao.deleteCity(city)
-    }
+
 
     suspend fun getCurrentWeather(queryMap: Map<String, String>): CurrentWeatherResponse {
         return api.getCurrentWeather(queryMap)
     }
 
-    suspend fun getSearchedCity(queryMap: Map<String, String>): SearchedCityResponse {
+    suspend fun getSearchedCity(queryMap: Map<String, String>): List<SearchedCityResponse> {
         return api.getCities(queryMap)
     }
 
