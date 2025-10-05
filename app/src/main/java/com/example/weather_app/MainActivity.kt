@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
 
 
             binding.lottieAnm.setAnimation(getWeatherIcon(it.weather[0].main, it.weather[0].icon))
-            binding.tvCityName.text = getCountryName(it.sys.country)
+            binding.tvCityName.text = it.name
             binding.tvWeather.text = it.weather[0].main
             binding.tvFeel.text =
                 getString(R.string.feel_like, formatDegreeToCelsius(it.main.feels_like).toString())
@@ -79,10 +79,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    fun getCountryName(countryCode: String): String {
-        val locale = Locale("", countryCode)
-        return locale.displayCountry
-    }
+
 
     override fun onResume() {
         super.onResume()

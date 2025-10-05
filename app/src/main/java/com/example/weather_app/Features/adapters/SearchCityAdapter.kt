@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.weather_app.Data.Model.SearchedCityResponse
 import com.example.weather_app.databinding.LayoutSearchCityBinding
+import java.util.Locale
 
 
 class SearchCityAdapter(
@@ -31,7 +32,7 @@ class SearchCityAdapter(
                 city.name
             }
 
-            binding.tvCountry.text = city.country
+            binding.tvCountry.text = getCountryName(city.country)
 
             binding.root.setOnClickListener {
                 onItemClick(city)
@@ -49,6 +50,11 @@ class SearchCityAdapter(
 
     override fun onBindViewHolder(holder: CityViewHolder, position: Int) {
         holder.bind(cities[position])
+    }
+
+    fun getCountryName(countryCode: String): String {
+        val locale = Locale("", countryCode)
+        return locale.displayCountry
     }
 
     override fun getItemCount(): Int = cities.size
