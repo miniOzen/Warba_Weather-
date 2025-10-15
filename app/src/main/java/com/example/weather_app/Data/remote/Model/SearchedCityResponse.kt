@@ -1,4 +1,4 @@
-package com.example.weather_app.Data.Model
+package com.example.weather_app.Data.remote.Model
 
 data class SearchedCityResponse(
     val name: String,

@@ -1,13 +1,14 @@
-package com.example.weather_app.Features
+package com.example.weather_app.Features.SearchCity
 
 import android.os.Bundle
+import android.widget.SearchView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import android.widget.SearchView
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.weather_app.Data.Database.SavedCityEntity
-import com.example.weather_app.Data.Model.SearchedCityResponse
-import com.example.weather_app.Features.adapters.SearchCityAdapter
+import com.example.weather_app.Data.Database.Entities.SavedCityEntity
+import com.example.weather_app.Data.remote.Model.SearchedCityResponse
+import com.example.weather_app.Features.CurrentAndForeCastWeather.WeatherViewModel
+import com.example.weather_app.Features.CurrentAndForeCastWeather.adapters.SearchCityAdapter
 import com.example.weather_app.databinding.ActivitySearchCityBinding
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -15,7 +16,7 @@ import dagger.hilt.android.AndroidEntryPoint
 class SearchCityActivity : AppCompatActivity() {
 
     lateinit var binding: ActivitySearchCityBinding
-    val model: WeatherViewModel by viewModels()
+    val model: SearchViewModel by viewModels()
     val searchItems = mutableListOf<SearchedCityResponse>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,7 +25,7 @@ class SearchCityActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val adapter = SearchCityAdapter(searchItems, {
-            model.saveCity(SavedCityEntity(1,it.name,it.country,it.lon,it.lat))
+            model.saveCity(SavedCityEntity(1, it.name, it.country, it.lon, it.lat))
             onBackPressedDispatcher.onBackPressed()
         })
         binding.rvSearchResult.adapter = adapter

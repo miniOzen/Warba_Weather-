@@ -1,10 +1,10 @@
-package com.example.weather_app.Features.adapters
+package com.example.weather_app.Features.CurrentAndForeCastWeather.adapters
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.example.weather_app.Data.Model.SearchedCityResponse
+import com.example.weather_app.Data.remote.Model.SearchedCityResponse
 import com.example.weather_app.databinding.LayoutSearchCityBinding
 import java.util.Locale
 

@@ -1,9 +1,8 @@
-package com.example.weather_app.Data.Api
+package com.example.weather_app.Data.remote
 
-import com.example.weather_app.Data.Model.CurrentWeatherResponse
-import com.example.weather_app.Data.Model.ForecastWeatherResponse
-import com.example.weather_app.Data.Model.SearchedCityResponse
-import retrofit2.Call
+import com.example.weather_app.Data.remote.Model.CurrentWeatherResponse
+import com.example.weather_app.Data.remote.Model.ForecastWeatherResponse
+import com.example.weather_app.Data.remote.Model.SearchedCityResponse
 import retrofit2.http.GET
 import retrofit2.http.QueryMap
 

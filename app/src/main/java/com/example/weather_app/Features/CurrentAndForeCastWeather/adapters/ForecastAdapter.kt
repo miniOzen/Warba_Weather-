@@ -1,10 +1,10 @@
-package com.example.weather_app.Features.adapters
+package com.example.weather_app.Features.CurrentAndForeCastWeather.adapters
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.example.weather_app.Data.Model.ForecastItem
-import com.example.weather_app.Data.Model.ForecastWeatherResponse
+import com.example.weather_app.Data.remote.Model.ForecastItem
+import com.example.weather_app.Features.CurrentAndForeCastWeather.Model.ForeCastUiModel
 import com.example.weather_app.R
 import com.example.weather_app.databinding.LayoutForecastWeatherBinding
 import java.text.SimpleDateFormat
@@ -12,7 +12,7 @@ import java.util.Date
 import java.util.Locale
 
 class ForecastAdapter(
-    private val items: List<ForecastItem>,
+    private val items: List<ForeCastUiModel>,
 ) : RecyclerView.Adapter<ForecastAdapter.ForecastViewHolder>() {
 
     inner class ForecastViewHolder(val binding: LayoutForecastWeatherBinding) :
@@ -33,13 +33,13 @@ class ForecastAdapter(
         val dayOfWeek = SimpleDateFormat("EEE", Locale.getDefault()).format(localDate)
         holder.binding.tvDay.text = if (position == 0) "Today" else dayOfWeek
 
-        val minTemp = (item.main.temp_min - 273.15).toInt()
-        val maxTemp = (item.main.temp_max - 273.15).toInt()
+        val minTemp = (item.temp_min - 273.15).toInt()
+        val maxTemp = (item.temp_max - 273.15).toInt()
 
         holder.binding.tvMin.text = "${minTemp}°"
         holder.binding.tvMax.text = "${maxTemp}°"
 
-        when (item.weather[0].main.lowercase(Locale.getDefault())) {
+        when (item.weather.lowercase(Locale.getDefault())) {
             "clear" -> holder.binding.lottieAnim.setAnimation(R.raw.sunny)
             "clouds" -> holder.binding.lottieAnim.setAnimation(R.raw.clouds)
             "rain" -> holder.binding.lottieAnim.setAnimation(R.raw.rainy)

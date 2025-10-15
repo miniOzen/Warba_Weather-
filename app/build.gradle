@@ -74,5 +74,6 @@ dependencies {
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3"
     testImplementation "io.mockk:mockk:1.13.12"
     testImplementation 'junit:junit:4.13.2'
+    implementation "org.jetbrains.kotlin:kotlin-test:2.1.0"
 
 }

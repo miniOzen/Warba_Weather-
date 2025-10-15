@@ -1,22 +1,26 @@
-package com.example.weather_app
-
-
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.Observer
-import com.example.weather_app.Data.Database.SavedCityEntity
-import com.example.weather_app.Data.ForecastIntent
-import com.example.weather_app.Data.ForecastState
-import com.example.weather_app.Data.Model.*
-import com.example.weather_app.Data.WeatherRepository
-import com.example.weather_app.Features.WeatherViewModel
+import com.example.weather_app.Data.Database.Entities.SavedCityEntity
+import com.example.weather_app.Data.remote.Model.ForecastWeatherResponse
+import com.example.weather_app.Features.CurrentAndForeCastWeather.ForecastIntent
+import com.example.weather_app.Features.CurrentAndForeCastWeather.ForecastState
+import com.example.weather_app.Features.CurrentAndForeCastWeather.Model.CurrentWeatherUIModel
+import com.example.weather_app.Features.CurrentAndForeCastWeather.Model.ForeCastUiModel
+import com.example.weather_app.Features.CurrentAndForeCastWeather.WeatherViewModel
+import com.example.weather_app.Features.CurrentAndForeCastWeather.usecase.CurrentWeatherUseCase
+import com.example.weather_app.Features.CurrentAndForeCastWeather.usecase.ForeCastUseCase
+import com.example.weather_app.Features.common.SaveCityUseCase
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.*
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.*
 import org.junit.*
-
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WeatherViewModelTest {
@@ -25,14 +29,18 @@ class WeatherViewModelTest {
     val instantExecutorRule = InstantTaskExecutorRule() // LiveData runs synchronously
 
     private val testDispatcher = StandardTestDispatcher()
-    private lateinit var repository: WeatherRepository
+    private lateinit var saveCityUseCase: SaveCityUseCase
+    private lateinit var currentWeatherUseCase: CurrentWeatherUseCase
+    private lateinit var foreCastUseCase: ForeCastUseCase
     private lateinit var viewModel: WeatherViewModel
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        repository = mockk()
-        viewModel = WeatherViewModel(repository)
+        saveCityUseCase = mockk()
+        currentWeatherUseCase = mockk()
+        foreCastUseCase = mockk()
+        viewModel = WeatherViewModel(saveCityUseCase, currentWeatherUseCase, foreCastUseCase)
     }
 
     @After
@@ -42,93 +50,35 @@ class WeatherViewModelTest {
 
     @Test
     fun `fetchCurrentWeather updates LiveData on success`() = runTest {
-        val fakeWeather = CurrentWeatherResponse(
-            coord = Coord(0.0,0.0),
-            weather = emptyList(),
-            base = "stations",
-            main = Main(0.0,0.0,0.0,0.0,0,0,null,null),
-            visibility = 0,
-            wind = Wind(0.0,0,0.0),
-            clouds = Clouds(0),
-            dt = 0,
-            sys = Sys(0,0,"",0,0),
-            timezone = 0,
-            id = 0,
+        val fakeWeather = CurrentWeatherUIModel(
             name = "TestCity",
-            cod = 200
+            feels_like = 25.0,
+            speed = 5.0,
+            temp_min = 20.0,
+            calledTime = 0L,
+            temp_max = 28.0,
+            temp = 26.0,
+            icon = "01d",
+            humidity = 60,
+            weather = "Clear"
         )
 
-        coEvery { repository.getSavedCities() } returns emptyList()
-        coEvery { repository.getCurrentWeather(any()) } returns fakeWeather
+        coEvery { currentWeatherUseCase.invoke() } returns fakeWeather
 
-        val observer = mockk<Observer<CurrentWeatherResponse>>(relaxed = true)
+        val observer = mockk<Observer<CurrentWeatherUIModel>>(relaxed = true)
         viewModel.weather.observeForever(observer)
 
         viewModel.fetchCurrentWeather()
         advanceUntilIdle()
 
-        coVerify { repository.getCurrentWeather(any()) }
-        Assert.assertEquals(fakeWeather, viewModel.weather.value)
+        coVerify { currentWeatherUseCase.invoke() }
+        assertEquals(fakeWeather, viewModel.weather.value)
         viewModel.weather.removeObserver(observer)
     }
 
     @Test
-    fun `getForeCast updates state on success`() = runTest {
-        val fakeForecast = ForecastWeatherResponse(
-            "", message = 1, cnt = 7, list = listOf(),
-            city = City(1,"", Coord(0.0,0.0), "",1,1,1L,1)
-        )
-        coEvery { repository.getSavedCities() } returns emptyList()
-        coEvery { repository.getForecastWeather(any()) } returns fakeForecast
-
-        // Collect the state flow
-        val states = mutableListOf<ForecastState>()
-        val job = launch { viewModel.state.toList(states) } // collect all emitted states
-
-        viewModel.processIntent(ForecastIntent.LoadForecast)
-        advanceUntilIdle()
-
-        coVerify { repository.getForecastWeather(any()) }
-
-        // Assert the last emitted state contains our fakeForecast
-        Assert.assertEquals(fakeForecast, states.last().forecast)
-        Assert.assertFalse(states.last().isLoading)
-        Assert.assertNull(states.last().error)
-
-        job.cancel()
-    }
-
-    @Test
-    fun `getSearchCity updates LiveData on success`() = runTest {
-        val fakeResult = listOf(SearchedCityResponse("Kuwait", 29.37, 47.97, "KW", null))
-        coEvery { repository.getSearchedCity(any()) } returns fakeResult
-
-        val observer = mockk<Observer<List<SearchedCityResponse>>>(relaxed = true)
-        viewModel.searchResult.observeForever(observer)
-
-        viewModel.getSearchCity("Kuwait")
-        advanceUntilIdle()
-
-        coVerify { repository.getSearchedCity(any()) }
-        Assert.assertEquals(fakeResult, viewModel.searchResult.value)
-        viewModel.searchResult.removeObserver(observer)
-    }
-
-    @Test
-    fun `saveCity calls repository saveCity`() = runTest {
-        val city = SavedCityEntity(0, "TestCity", "KW",0.0, 0.0, )
-        coEvery { repository.saveCity(city) } just Runs
-
-        viewModel.saveCity(city)
-        advanceUntilIdle()
-
-        coVerify { repository.saveCity(city) }
-    }
-
-    @Test
     fun `fetchCurrentWeather sets error LiveData on exception`() = runTest {
-        coEvery { repository.getSavedCities() } returns emptyList()
-        coEvery { repository.getCurrentWeather(any()) } throws RuntimeException("Network error")
+        coEvery { currentWeatherUseCase.invoke() } throws RuntimeException("Network error")
 
         val observer = mockk<Observer<String>>(relaxed = true)
         viewModel.error.observeForever(observer)
@@ -136,7 +86,59 @@ class WeatherViewModelTest {
         viewModel.fetchCurrentWeather()
         advanceUntilIdle()
 
-        Assert.assertEquals("Network error", viewModel.error.value)
+        assertEquals("Network error", viewModel.error.value)
         viewModel.error.removeObserver(observer)
+    }
+
+    @Test
+    fun `getForeCast updates state on success`() = runTest {
+        val fakeForecastResponse = mockk<ForecastWeatherResponse>()
+        coEvery { foreCastUseCase.invoke() } returns Result.success(fakeForecastResponse)
+
+        // We mock the toUiModel mapping if needed, or keep empty list for simplicity
+        every { fakeForecastResponse.list } returns emptyList()
+
+        val states = mutableListOf<ForecastState>()
+        val job = launch { viewModel.state.toList(states) }
+
+        viewModel.processIntent(ForecastIntent.LoadForecast)
+        advanceUntilIdle()
+
+        coVerify { foreCastUseCase.invoke() }
+
+        val lastState = states.last()
+        assertFalse(lastState.isLoading)
+        assertNull(lastState.error)
+        assertEquals(0, lastState.forecast?.size)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `getForeCast sets error state on failure`() = runTest {
+        coEvery { foreCastUseCase.invoke() } returns Result.failure(RuntimeException("API error"))
+
+        val states = mutableListOf<ForecastState>()
+        val job = launch { viewModel.state.toList(states) }
+
+        viewModel.processIntent(ForecastIntent.LoadForecast)
+        advanceUntilIdle()
+
+        val lastState = states.last()
+        assertFalse(lastState.isLoading)
+        assertEquals("API error", lastState.error)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `saveCity calls saveCityUseCase`() = runTest {
+        val city = SavedCityEntity(0, "TestCity", "KW", 0.0, 0.0)
+        coEvery { saveCityUseCase.invoke(city) } just Runs
+
+        viewModel.saveCity(city)
+        advanceUntilIdle()
+
+        coVerify { saveCityUseCase.invoke(city) }
     }
 }
