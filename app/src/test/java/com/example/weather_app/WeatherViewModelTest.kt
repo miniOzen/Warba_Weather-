@@ -1,3 +1,5 @@
+package com.example.weather_app
+
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.Observer
 import com.example.weather_app.Data.Database.Entities.SavedCityEntity
